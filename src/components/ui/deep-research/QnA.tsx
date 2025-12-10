@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useDeepResearchStore } from "@/store/deepResearch";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import QuestionForm from "./QuestionForm";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import ResearchActivities from "./ResearchActivities";
 import ResearchReport from "./ResearchReport";
 import ResearchTimer from "./ResearchTimer";
@@ -21,17 +22,41 @@ const QnA = () => {
     setReport,
   } = useDeepResearchStore();
 
-  const { append, data, isLoading} = useChat({
-    api: "/api/deep-research",
+  // Track accumulated data from messages
+  const [streamData, setStreamData] = useState<unknown[]>([]);
+  const hasStartedRef = useRef(false);
+
+  // AI SDK v5: useChat with transport and sendMessage
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/api/deep-research",
+    }),
   });
 
+  const isLoading = status === "streaming" || status === "submitted";
 
+  // Extract data from messages - AI SDK v5 uses message parts for custom data
   useEffect(() => {
-    if (!data) return;
+    const allData: unknown[] = [];
+    for (const message of messages) {
+      if (message.parts) {
+        for (const part of message.parts) {
+          // Custom data parts in AI SDK v5
+          if ((part as any).type === "data" && (part as any).value) {
+            allData.push(...(part as any).value);
+          }
+        }
+      }
+    }
+    setStreamData(allData);
+  }, [messages]);
+
+  // Process stream data for activities, sources, and report
+  useEffect(() => {
+    if (streamData.length === 0) return;
 
     // extract activities and sources
-    const messages = data as unknown[];
-    const activities = messages
+    const activities = streamData
       .filter(
         (msg) => typeof msg === "object" && (msg as any).type === "activity"
       )
@@ -52,7 +77,7 @@ const QnA = () => {
         };
       });
     setSources(sources);
-    const reportData = messages.find(
+    const reportData = streamData.find(
       (msg) => typeof msg === "object" && (msg as any).type === "report"
     );
     const report =
@@ -62,24 +87,29 @@ const QnA = () => {
     setReport(report);
 
     setIsLoading(isLoading);
-  }, [data, setActivities, setSources, setReport, setIsLoading, isLoading]);
+  }, [streamData, setActivities, setSources, setReport, setIsLoading, isLoading]);
 
+  // Start research when questions are completed
   useEffect(() => {
-    if (isCompleted && questions.length > 0) {
+    if (isCompleted && questions.length > 0 && !hasStartedRef.current) {
+      hasStartedRef.current = true;
       const clarifications = questions.map((question, index) => ({
         question: question,
         answer: answers[index],
       }));
 
-      append({
-        role: "user",
-        content: JSON.stringify({
-          topic: topic,
-          clarifications: clarifications,
-        }),
+      // AI SDK v5: sendMessage with parts array
+      sendMessage({
+        parts: [{
+          type: "text",
+          text: JSON.stringify({
+            topic: topic,
+            clarifications: clarifications,
+          }),
+        }],
       });
     }
-  }, [isCompleted, questions, answers, topic, append]);
+  }, [isCompleted, questions, answers, topic, sendMessage]);
 
   if (questions.length === 0) return null;
 
