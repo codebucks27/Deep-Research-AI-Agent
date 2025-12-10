@@ -17,14 +17,9 @@ import {
   REPORT_SYSTEM_PROMPT,
 } from "./prompts";
 import { callModel } from "./model-caller";
-import { exa } from "./services";
+import { executeFoundrySearch } from "./foundry-tools";
 import { combineFindings, handleError } from "./utils";
-import {
-  MAX_CONTENT_CHARS,
-  MAX_ITERATIONS,
-  MAX_SEARCH_RESULTS,
-  MODELS,
-} from "./constants";
+import { MAX_ITERATIONS, MODELS } from "./constants";
 
 export async function generateSearchQueries(
   researchState: ResearchState,
@@ -69,44 +64,20 @@ export async function search(
   researchState: ResearchState,
   activityTracker: ActivityTracker
 ): Promise<SearchResult[]> {
-
-    activityTracker.add("search","pending",`Searching for ${query}`);
+  activityTracker.add("search", "pending", `Searching for ${query}`);
 
   try {
-    const searchResult = await exa.searchAndContents(query, {
-      type: "keyword",
-      numResults: MAX_SEARCH_RESULTS,
-      startPublishedDate: new Date(
-        Date.now() - 365 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      endPublishedDate: new Date().toISOString(),
-      startCrawlDate: new Date(
-        Date.now() - 365 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      endCrawlDate: new Date().toISOString(),
-      excludeDomains: ["https://youtube.com"],
-      text: {
-        maxCharacters: MAX_CONTENT_CHARS,
-      },
-    });
-
-    const filteredResults = searchResult.results
-      .filter((r) => r.title && r.text !== undefined)
-      .map((r) => ({
-        title: r.title || "",
-        url: r.url,
-        content: r.text || "",
-      }));
+    // Execute both web and ontology search via Foundry tools
+    const results = await executeFoundrySearch(query);
 
     researchState.completedSteps++;
 
-    activityTracker.add("search","complete",`Found ${filteredResults.length} results for ${query}`);
+    activityTracker.add("search", "complete", `Found ${results.length} results for ${query}`);
 
-
-    return filteredResults;
+    return results;
   } catch (error) {
     console.log("error: ", error);
-    return handleError(error, `Searching for ${query}`, activityTracker, "search", []) || []
+    return handleError(error, `Searching for ${query}`, activityTracker, "search", []) || [];
   }
 }
 

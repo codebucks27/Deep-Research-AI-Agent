@@ -1,8 +1,5 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import Exa from "exa-js"
+// This file previously contained OpenRouter and Exa service initialization.
+// These have been replaced by the Foundry provider in src/lib/foundry-provider.ts
+// and mocked Foundry tools in ./foundry-tools.ts
 
-export const exa = new Exa(process.env.EXA_SEARCH_API_KEY || "");
-
-export const openrouter = createOpenRouter({
-    apiKey: process.env.OPENROUTER_API_KEY || "",
-  });
+// File kept for reference - can be deleted if not needed.

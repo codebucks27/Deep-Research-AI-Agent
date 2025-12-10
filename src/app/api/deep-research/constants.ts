@@ -5,11 +5,10 @@ export const MAX_CONTENT_CHARS = 20000; // Maximum number of characters in the c
 export const MAX_RETRY_ATTEMPTS = 3; // It is the number of times the model will try to call LLMs if it fails
 export const RETRY_DELAY_MS = 1000; // It is the delay in milliseconds between retries for the model to call LLMs
 
-// Model names
+// Model names (Foundry model identifiers)
 export const MODELS = {
-  PLANNING: "openai/gpt-4o",
-  EXTRACTION: "openai/gpt-4o-mini",
-  ANALYSIS: "openai/gpt-4o",
-  REPORT: "google/gemini-2.0-flash-thinking-exp:free"
-  // REPORT: "anthropic/claude-3.7-sonnet:thinking",
+  PLANNING: "GPT_5",
+  EXTRACTION: "GPT_5",
+  ANALYSIS: "GPT_5",
+  REPORT: "GPT_5",
 }; 
