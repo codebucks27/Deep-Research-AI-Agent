@@ -9,6 +9,9 @@ A powerful Deep Research AI agent like Gemini or ChatGPT. Using Next.js, Vercel 
 If you want to learn how to create it please follow below tutorial👇: <br />
 ➡ Tutorial Link 💚: [Deep research ai agent](https://youtu.be/zKN18GQBxCM) <br />
 
+If you are looking for old tutorial version please checkout this branch:<br />
+![Tutorial Version Old](https://github.com/codebucks27/Deep-Research-AI-Agent/tree/tutorial-version-(old)) <br />
+
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/zKN18GQBxCM/0.jpg)](https://www.youtube.com/watch?v=zKN18GQBxCM)
 
 🎯 For customised solutions or deployment please contact: https://tally.so/r/wdlj0N

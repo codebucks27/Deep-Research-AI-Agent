@@ -20,6 +20,9 @@
 # production
 /build
 
+.sisyphus
+AGENTS.md
+
 # misc
 .DS_Store
 *.pem

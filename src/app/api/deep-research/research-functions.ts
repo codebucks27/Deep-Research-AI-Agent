@@ -38,7 +38,7 @@ export async function generateSearchQueries(
       model: MODELS.PLANNING,
       prompt: getPlanningPrompt(
         researchState.topic,
-        researchState.clerificationsText
+        researchState.clarificationsText
       ),
       system: PLANNING_SYSTEM_PROMPT,
       schema: z.object({
@@ -73,6 +73,8 @@ export async function search(
     activityTracker.add("search","pending",`Searching for ${query}`);
 
   try {
+    // exa-js v2: searchAndContents is deprecated but still works
+    // Using it because the search() method overloads have type issues with TypeScript
     const searchResult = await exa.searchAndContents(query, {
       type: "keyword",
       numResults: MAX_SEARCH_RESULTS,
@@ -91,8 +93,8 @@ export async function search(
     });
 
     const filteredResults = searchResult.results
-      .filter((r) => r.title && r.text !== undefined)
-      .map((r) => ({
+      .filter((r: { title: string | null; text?: string }) => r.title && r.text !== undefined)
+      .map((r: { title: string | null; url: string; text?: string }) => ({
         title: r.title || "",
         url: r.url,
         content: r.text || "",
@@ -126,7 +128,7 @@ export async function extractContent(
             prompt: getExtractionPrompt(
               content,
               researchState.topic,
-              researchState.clerificationsText
+              researchState.clarificationsText
             ),
             system: EXTRACTION_SYSTEM_PROMPT,
             schema: z.object({
@@ -194,7 +196,7 @@ export async function analyzeFindings(
         prompt: getAnalysisPrompt(
           contentText,
           researchState.topic,
-          researchState.clerificationsText,
+          researchState.clarificationsText,
           currentQueries,
           currentIteration,
           MAX_ITERATIONS,
@@ -245,7 +247,7 @@ export async function generateReport(researchState: ResearchState, activityTrack
         prompt: getReportPrompt(
           contentText,
           researchState.topic,
-          researchState.clerificationsText
+          researchState.clarificationsText
         ),
         system: REPORT_SYSTEM_PROMPT,
         activityType: "generate"

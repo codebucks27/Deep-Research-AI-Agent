@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { generateObject } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { generateText, Output } from 'ai';
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
 
@@ -18,15 +18,18 @@ const clarifyResearchGoals = async (topic: string) => {
     `
 
     try{
-        const { object } = await generateObject({
+        // AI SDK v6: Use generateText with Output.object() instead of generateObject
+        const { output } = await generateText({
             model: openrouter("meta-llama/llama-3.3-70b-instruct"),
             prompt,
-            schema: z.object({
-                questions: z.array(z.string())
+            output: Output.object({
+                schema: z.object({
+                    questions: z.array(z.string())
+                })
             })
           });
 
-          return object.questions;
+          return output?.questions;
     }catch(error){
     console.log("Error while generating questions: ", error)
 

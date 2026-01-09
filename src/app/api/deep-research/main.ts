@@ -6,12 +6,11 @@ import { ResearchState } from "./types";
 
 
 export async function deepResearch(researchState: ResearchState, dataStream: any){
-
     let iteration = 0;
     
     const activityTracker = createActivityTracker(dataStream, researchState);
 
-    const initialQueries = await generateSearchQueries(researchState, activityTracker)
+    const initialQueries = await generateSearchQueries(researchState, activityTracker);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let currentQueries = (initialQueries as any).searchQueries
     while(currentQueries && currentQueries.length > 0 && iteration <=  MAX_ITERATIONS){

@@ -1,4 +1,4 @@
-import { generateObject, generateText } from "ai";
+import { generateText, Output } from "ai";
 import { openrouter } from "./services";
 import { ActivityTracker, ModelCallOptions, ResearchState } from "./types";
 import { MAX_RETRY_ATTEMPTS, RETRY_DELAY_MS } from "./constants";
@@ -16,18 +16,20 @@ researchState: ResearchState,activityTracker: ActivityTracker ): Promise<T | str
   while(attempts < MAX_RETRY_ATTEMPTS){
     try{
       if(schema){
-
-        const { object, usage } = await generateObject({
+        // AI SDK v6: Use generateText with Output.object() instead of generateObject
+        const { output, usage } = await generateText({
             model: openrouter(model),
             prompt,
             system,
-            schema: schema
+            output: Output.object({
+              schema: schema
+            })
           });
     
-          researchState.tokenUsed += usage.totalTokens;
+          researchState.tokenUsed += usage.totalTokens ?? 0;
           researchState.completedSteps++
     
-          return object;
+          return output as T;
         }else{
     
             const { text, usage } = await generateText({
@@ -36,7 +38,7 @@ researchState: ResearchState,activityTracker: ActivityTracker ): Promise<T | str
                 system,
               });
     
-              researchState.tokenUsed += usage.totalTokens;
+              researchState.tokenUsed += usage.totalTokens ?? 0;
           researchState.completedSteps++
     
           return text;

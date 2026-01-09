@@ -12,7 +12,7 @@ export interface ResearchState {
     tokenUsed: number,
     findings: ResearchFindings[],
     processedUrl: Set<string>,
-    clerificationsText: string
+    clarificationsText: string
 }
 
 export interface ModelCallOptions<T>{
