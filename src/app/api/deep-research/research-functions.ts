@@ -17,7 +17,7 @@ import {
   REPORT_SYSTEM_PROMPT,
 } from "./prompts";
 import { callModel } from "./model-caller";
-import { exa } from "./services";
+import { exa, getTavily } from "./services";
 import { combineFindings, handleError } from "./utils";
 import {
   MAX_CONTENT_CHARS,
@@ -64,6 +64,50 @@ export async function generateSearchQueries(
   }
 }
 
+async function searchWithExa(query: string): Promise<SearchResult[]> {
+  const searchResult = await exa.searchAndContents(query, {
+    type: "keyword",
+    numResults: MAX_SEARCH_RESULTS,
+    startPublishedDate: new Date(
+      Date.now() - 365 * 24 * 60 * 60 * 1000
+    ).toISOString(),
+    endPublishedDate: new Date().toISOString(),
+    startCrawlDate: new Date(
+      Date.now() - 365 * 24 * 60 * 60 * 1000
+    ).toISOString(),
+    endCrawlDate: new Date().toISOString(),
+    excludeDomains: ["https://youtube.com"],
+    text: {
+      maxCharacters: MAX_CONTENT_CHARS,
+    },
+  });
+
+  return searchResult.results
+    .filter((r: { title: string | null; text?: string }) => r.title && r.text !== undefined)
+    .map((r: { title: string | null; url: string; text?: string }) => ({
+      title: r.title || "",
+      url: r.url,
+      content: r.text || "",
+    }));
+}
+
+async function searchWithTavily(query: string): Promise<SearchResult[]> {
+  const client = getTavily();
+  const response = await client.search(query, {
+    maxResults: MAX_SEARCH_RESULTS,
+    searchDepth: "advanced",
+    excludeDomains: ["youtube.com"],
+  });
+
+  return response.results
+    .filter((r: { title: string; url: string; content: string; score: number }) => r.title && r.content && r.score > 0)
+    .map((r: { title: string; url: string; content: string }) => ({
+      title: r.title,
+      url: r.url,
+      content: r.content,
+    }));
+}
+
 export async function search(
   query: string,
   researchState: ResearchState,
@@ -73,32 +117,27 @@ export async function search(
     activityTracker.add("search","pending",`Searching for ${query}`);
 
   try {
-    // exa-js v2: searchAndContents is deprecated but still works
-    // Using it because the search() method overloads have type issues with TypeScript
-    const searchResult = await exa.searchAndContents(query, {
-      type: "keyword",
-      numResults: MAX_SEARCH_RESULTS,
-      startPublishedDate: new Date(
-        Date.now() - 365 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      endPublishedDate: new Date().toISOString(),
-      startCrawlDate: new Date(
-        Date.now() - 365 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      endCrawlDate: new Date().toISOString(),
-      excludeDomains: ["https://youtube.com"],
-      text: {
-        maxCharacters: MAX_CONTENT_CHARS,
-      },
-    });
+    const provider = process.env.SEARCH_PROVIDER || "exa";
+    let filteredResults: SearchResult[];
 
-    const filteredResults = searchResult.results
-      .filter((r: { title: string | null; text?: string }) => r.title && r.text !== undefined)
-      .map((r: { title: string | null; url: string; text?: string }) => ({
-        title: r.title || "",
-        url: r.url,
-        content: r.text || "",
-      }));
+    if (provider === "both") {
+      const [exaResults, tavilyResults] = await Promise.all([
+        searchWithExa(query),
+        searchWithTavily(query),
+      ]);
+      // Merge and deduplicate by URL
+      const seen = new Set<string>();
+      filteredResults = [...exaResults, ...tavilyResults].filter((r) => {
+        if (seen.has(r.url)) return false;
+        seen.add(r.url);
+        return true;
+      });
+    } else if (provider === "tavily") {
+      filteredResults = await searchWithTavily(query);
+    } else {
+      // Default to exa
+      filteredResults = await searchWithExa(query);
+    }
 
     researchState.completedSteps++;
 

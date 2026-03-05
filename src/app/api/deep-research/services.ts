@@ -1,5 +1,6 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import Exa from "exa-js"
+import { tavily } from "@tavily/core"
 
 // Lazy initialization to avoid build-time errors when env vars are not available
 let _exa: Exa | null = null;
@@ -22,6 +23,20 @@ export const exa = {
   getContents: async (...args: Parameters<Exa['getContents']>) => getExa().getContents(...args),
   findSimilar: async (...args: Parameters<Exa['findSimilar']>) => getExa().findSimilar(...args),
   findSimilarAndContents: async (...args: Parameters<Exa['findSimilarAndContents']>) => getExa().findSimilarAndContents(...args),
+};
+
+// Lazy initialization for Tavily client
+let _tavily: ReturnType<typeof tavily> | null = null;
+
+export const getTavily = () => {
+  if (!_tavily) {
+    const apiKey = process.env.TAVILY_API_KEY;
+    if (!apiKey) {
+      throw new Error("TAVILY_API_KEY environment variable is required");
+    }
+    _tavily = tavily({ apiKey });
+  }
+  return _tavily;
 };
 
 export const openrouter = createOpenRouter({
