@@ -17,7 +17,7 @@ import {
   REPORT_SYSTEM_PROMPT,
 } from "./prompts";
 import { callModel } from "./model-caller";
-import { exa } from "./services";
+import { exa, tavilySearch } from "./services";
 import { combineFindings, handleError } from "./utils";
 import {
   MAX_CONTENT_CHARS,
@@ -73,32 +73,43 @@ export async function search(
     activityTracker.add("search","pending",`Searching for ${query}`);
 
   try {
-    // exa-js v2: searchAndContents is deprecated but still works
-    // Using it because the search() method overloads have type issues with TypeScript
-    const searchResult = await exa.searchAndContents(query, {
-      type: "keyword",
-      numResults: MAX_SEARCH_RESULTS,
-      startPublishedDate: new Date(
-        Date.now() - 365 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      endPublishedDate: new Date().toISOString(),
-      startCrawlDate: new Date(
-        Date.now() - 365 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      endCrawlDate: new Date().toISOString(),
-      excludeDomains: ["https://youtube.com"],
-      text: {
-        maxCharacters: MAX_CONTENT_CHARS,
-      },
-    });
+    const searchProvider = process.env.SEARCH_PROVIDER || "exa";
 
-    const filteredResults = searchResult.results
-      .filter((r: { title: string | null; text?: string }) => r.title && r.text !== undefined)
-      .map((r: { title: string | null; url: string; text?: string }) => ({
-        title: r.title || "",
-        url: r.url,
-        content: r.text || "",
-      }));
+    let filteredResults: SearchResult[];
+
+    if (searchProvider === "tavily") {
+      filteredResults = await tavilySearch(query, {
+        maxResults: MAX_SEARCH_RESULTS,
+        excludeDomains: ["youtube.com"],
+      });
+    } else {
+      // exa-js v2: searchAndContents is deprecated but still works
+      // Using it because the search() method overloads have type issues with TypeScript
+      const searchResult = await exa.searchAndContents(query, {
+        type: "keyword",
+        numResults: MAX_SEARCH_RESULTS,
+        startPublishedDate: new Date(
+          Date.now() - 365 * 24 * 60 * 60 * 1000
+        ).toISOString(),
+        endPublishedDate: new Date().toISOString(),
+        startCrawlDate: new Date(
+          Date.now() - 365 * 24 * 60 * 60 * 1000
+        ).toISOString(),
+        endCrawlDate: new Date().toISOString(),
+        excludeDomains: ["https://youtube.com"],
+        text: {
+          maxCharacters: MAX_CONTENT_CHARS,
+        },
+      });
+
+      filteredResults = searchResult.results
+        .filter((r: { title: string | null; text?: string }) => r.title && r.text !== undefined)
+        .map((r: { title: string | null; url: string; text?: string }) => ({
+          title: r.title || "",
+          url: r.url,
+          content: r.text || "",
+        }));
+    }
 
     researchState.completedSteps++;
 
