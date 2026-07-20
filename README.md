@@ -89,6 +89,24 @@ bun run dev
 
 Visit `http://localhost:3000` to see your app.
 
+### Optional AgentPond tracing
+
+To export OpenInference AI traces directly to a private Vercel Blob store,
+initialize AgentPond 0.6 from the project root:
+
+```bash
+npx agentpond@0.6.0 init --platform vercel
+```
+
+Follow the generated prompt, connect a private Blob store to the Vercel
+project, enable Vercel System Environment Variables, and set
+`AGENTPOND_ENABLED=true`. After running a research request:
+
+```bash
+npx agentpond@0.6.0 sync
+npx agentpond@0.6.0 traces list --limit 10
+```
+
 ## 🌟 Show Your Support
 
 Give a ⭐️ if this project helped you!
