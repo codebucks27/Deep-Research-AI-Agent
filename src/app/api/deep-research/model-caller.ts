@@ -18,7 +18,11 @@ researchState: ResearchState,activityTracker: ActivityTracker ): Promise<T | str
       if(schema){
         // AI SDK v6: Use generateText with Output.object() instead of generateObject
         const { output, usage } = await generateText({
-            experimental_telemetry: { isEnabled: process.env.AGENTPOND_ENABLED === "true" },
+            experimental_telemetry: {
+                isEnabled: process.env.AGENTPOND_ENABLED === "true",
+                recordInputs: true,
+                recordOutputs: true,
+            },
             model: openrouter(model),
             prompt,
             system,
@@ -34,7 +38,11 @@ researchState: ResearchState,activityTracker: ActivityTracker ): Promise<T | str
         }else{
     
             const { text, usage } = await generateText({
-                experimental_telemetry: { isEnabled: process.env.AGENTPOND_ENABLED === "true" },
+                experimental_telemetry: {
+                    isEnabled: process.env.AGENTPOND_ENABLED === "true",
+                    recordInputs: true,
+                    recordOutputs: true,
+                },
                 model: openrouter(model),
                 prompt,
                 system,

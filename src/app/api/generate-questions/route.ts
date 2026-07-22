@@ -20,7 +20,11 @@ const clarifyResearchGoals = async (topic: string) => {
     try{
         // AI SDK v6: Use generateText with Output.object() instead of generateObject
         const { output } = await generateText({
-            experimental_telemetry: { isEnabled: process.env.AGENTPOND_ENABLED === "true" },
+            experimental_telemetry: {
+                isEnabled: process.env.AGENTPOND_ENABLED === "true",
+                recordInputs: true,
+                recordOutputs: true,
+            },
             model: openrouter("meta-llama/llama-3.3-70b-instruct"),
             prompt,
             output: Output.object({
